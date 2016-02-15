@@ -12,7 +12,7 @@ def convert_block_matrix(mtrx, unit):
     divided_mtrx = [ [ [[]] for i in range(columns) ] for j in range(rows) ]
     for i in range(0, rows):
         for j in range(0, columns):
-            divided_mtrx[i][j] = mtrx[i*unit:(i+1)*unit,j*unit:(j+1)*unit]
+            divided_mtrx[i][j] = mtrx[i*unit:(i+1)*unit, j*unit:(j+1)*unit]
 
     return divided_mtrx
 
@@ -25,7 +25,9 @@ def discrete_cosine_transform(divided_mtrx):
 
     for i in range(0, rows):
         for j in range(0, columns):
-            dct_mtrx[i][j] = ftp.dct(divided_mtrx[i][j])
+            imf = np.float32(divided_mtrx[i][j])/255.0
+            dst = cv2.dct(imf)
+            dct_mtrx[i][j] = dst
 
     return dct_mtrx
 
@@ -37,7 +39,9 @@ def inverse_discrete_cosine_transform(dct_mtrx):
     divided_mtrx =[ [ [[]] for i in range(rows) ] for j in range(columns) ]
     for i in range(0, rows):
         for j in range(0, columns):
-            divided_mtrx[i][j] = ftp.dct(x=dct_mtrx[i][j], type=3)
+            idst = cv2.idct(dct_mtrx[i][j])*255
+            img = np.uint8(idst)
+            divided_mtrx[i][j] = img
     
     return divided_mtrx
 
@@ -60,7 +64,7 @@ def PSNR(a, b):
 
     for i in range(len(a)):
         for j in range(len(a[i])):
-            MSE_SUM += (a[i][j] - b[i][j]) ** 2
+            MSE_SUM += (float(a[i][j]) - float(b[i][j])) ** 2
 
             if MAX < a[i][j]:
                 MAX = a[i][j]
@@ -72,9 +76,14 @@ def PSNR(a, b):
 
 if __name__ == '__main__':
     im = cv2.imread('LENNA.png', 0)
-    
+
+    for i in range(len(im)):
+        for j in range(len(im[0])):
+            im[i][j] = float(im[i][j])
+
     print im
     bm = convert_block_matrix(im, 8)
+
     dctm = discrete_cosine_transform(bm)
 
     tri_matrix = triangle(8)
@@ -84,7 +93,10 @@ if __name__ == '__main__':
             dctm[i][j] = tri_matrix * dctm[i][j]
 
     idctm = inverse_discrete_cosine_transform(dctm)
-    comp_image = convert_original_matrix(idctm, 8)*(2.0/32.0)
+
+    #print idctm
+
+    comp_image = convert_original_matrix(idctm, 8)
 
     print comp_image
 
